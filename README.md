@@ -33,7 +33,7 @@ These YAML files can then be run by CS using one of two methods:
 
   The CS Command-Line Interface (CLI) can be invoked in one of two methods. You can simply type 'cslang' and enter the CS CLI, similar to Pyhton. After entering the CS CLI interface, you can type 'help' to see a list of CS CLI commands.
 
-  You can also run CS commands without entering the CS CLI by typing 'cslang <cs-command>' from a shell prompt. Typing 'cslang help' from a shell prompt will return the same list of CS CLI commands.
+  You can also run CS commands without entering the CS CLI by typing 'cslang \<cs-command\>' from a shell prompt. Typing 'cslang help' from a shell prompt will return the same list of CS CLI commands.
 * **Via REST API (not covered in the tutorial)**
 
   The REST API for CS is actually a completely separate open source project on GitHub called the CS WebApp. The CS WebApp runs an embedded version of CS that exposes CS functionality via a REST based web endpoint.
