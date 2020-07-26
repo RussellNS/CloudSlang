@@ -83,7 +83,7 @@ The example above centers around a provisioning/DevSecOps use case, but CS can a
   * Trigger SAST / DAST Security Scans
   * Trigger App Testing and/or Load Testing
   * Promote applications/content between environments (DEV -> TEST -> PROD)
-* Security Orchestration, Automation, and Responst (SOAR)
+* Security Orchestration, Automation, and Response (SOAR)
   * Have monitoring agents use CS perform their own actions, like:
     * Run security scripts based on specific events
     * Boot unrecognized logins
