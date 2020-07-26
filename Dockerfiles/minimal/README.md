@@ -2,21 +2,22 @@
 
 ## Minimal Configuration
 
+THIS IS THE CONTAINER YOU WANT. The 'minimal' install of CloudSlang is enough to run all CloudSlang automations.
+
 The intention of this container is to offer a minimal install of CloudSlang (CS) with updated CS content. This minimal install of CS includes:
 
 * The CS CLI (and content)
 * The CS WebApp (for REST API)
 * Java (headless)
-* SSH (client)
+* SSH (Client)
 
 In addition to providing the services listed above, the use case for this container container is to stay up and running, able to start automations via command-line or REST API.
 
-#### Running This Container
+### Running This Container
 
 To start this container, use the following steps.
 
 1. Build the CS image.
-
    ```
    cd /path/to/Dockerfile
    docker build -t cloudslang:1.0.161 .
@@ -24,21 +25,17 @@ To start this container, use the following steps.
    [optionally, you can pass build args to run newer or older versions]
    
    docker build -t cloudslang:1.0.161 --build-arg centos_version=latest --build-arg cs_version=1.0.161 .
-   
-   
    ```
 2. Run the CS container.
-
    ```
    docker run -d -p 8443:8443 --name cloudslang cloudslang:1.0.161
    ```
 
-#### Testing This Container via Command-Line
+### Testing This Container via Command-Line
 
 If your container is running successfully, you'll be able to use these commands and get the expected results:
 
-###### Test CS from outside the container using 'docker exec'
-
+##### Test CS from outside the container using 'docker exec':
 ```
 # docker exec -it cloudslang cslang run --f /opt/cslang-cli/content/io/cloudslang/base/print/print_text.sl --i text=Hi
 Loading..
@@ -48,8 +45,7 @@ Jul 06, 2020 5:39:17 PM org.springframework.shell.core.AbstractShell handleExecu
 INFO: Execution id: 100800001, duration: 0:00:09.889
 ```
 
-###### Test CS from inside the container at the command-line:
-
+##### Test CS from inside the container at the command-line:
 ```
 # docker exec -it cloudslang bash
 # cslang run --f /opt/cslang-cli/content/io/cloudslang/base/print/print_text.sl --i text=Hi
@@ -60,8 +56,7 @@ Jul 06, 2020 5:41:51 PM org.springframework.shell.core.AbstractShell handleExecu
 INFO: Execution id: 100800001, duration: 0:00:09.887
 ```
 
-###### Test CS from inside the container using the CloudSlang CLI:
-
+##### Test CS from inside the container using the CloudSlang CLI:
 ```
 # docker exec -it cloudslang bash
 # cslang
@@ -80,45 +75,39 @@ Operation: print_text finished with result: SUCCESS
 Execution id: 100800001, duration: 0:00:02.088
 ```
 
-#### Testing via the REST API
+### Testing via the REST API
 
 Get the version of the CS WebApp:
-
 ```
 # curl -k --user admin:admin -X GET https://localhost:8443/cs/rest/version
 {"version":"1.0.34"}
 ```
 
 Get the 'inputs' for the CS 'print_text' flow:
-
 ```
 # curl -k --user admin:admin -X GET https://localhost:8443/cs/rest/flows/v1/io.cloudslang.base.print.print_text/inputs
 [{"name":"text","required":true,"sensitive":false,"default":null}]
 ```
 
 Run a flow using CS via REST, and return the execution ID:
-
 ```
 # curl -k --user admin:admin -X POST -H 'Content-Type: application/json' -d '{ "slangFlowId":"io.cloudslang.base.print.print_text","runInputs":{"text":"Hi"},"systemProperties": {} }' https://localhost:8443/cs/rest/v1/executions
 100000001
 ```
 
 Get the status of an execution that was run:
-
 ```
 # curl -k --user admin:admin -X GET https://localhost:8443/cs/rest/v1/executions/100000001
 {"executionId":100000001,"status":"COMPLETED","result":"SUCCESS","outputs":"{}"}
 ```
 
 See the output of the 'print_text' flow:
-
 ```
 # docker logs cloudslang
 Hi
 ```
 
 Using username:password for these automations is a bit insecure. Using basic authentication isn't much better, but it's something. To use basic authentication tokens instead, use one of these commands:
-
 ```
 # echo "author:author" | base64
 RaNDomSTRiNg==
@@ -129,7 +118,6 @@ RaNDomSTRiNg==
 ```
 
 Replace the '--user username:password' part of the command line with an HTTP header for all CS REST API calls. For example:
-
 ```
 # curl -k -X GET -H "Authorization: Basic RaNDomSTRiNg=" https://localhost:8443/cs/rest/version
 {"version":"1.0.34"}
@@ -139,7 +127,7 @@ NOTE: The REST API for CS comes with preinstalled self-signed certs.  So usernam
 
 * /opt/cslang-rest/security/users.yml
 
-#### Importing New CS Content
+### Importing New CS Content
 
 Micro Focus (MF) creates new content for CS regularly, and posts it for free on the MF Marketplace. This free CS content can be found here:
 
@@ -156,12 +144,10 @@ This Dockerfile was designed to automatically pull in any content you download f
 4. Copy your downloaded content (jar files) to the 'mf_content' directory.
 5. Uncomment the COPY line in this Dockerfile below.
    * From this:
-
    ```
    #COPY ./mf_content /media/mf_content
    ```
-   * To this
-
+   * To this:
    ```
    COPY ./mf_content /media/mf_content
    ```
