@@ -2,9 +2,9 @@
 
 ## Minimal Configuration
 
-THIS IS THE CONTAINER YOU WANT. The 'minimal' install of CloudSlang is enough to run all CloudSlang automations.
+THIS IS THE CONTAINER YOU WANT.
 
-The intention of this container is to offer a minimal install of CloudSlang (CS) with updated CS content. This minimal install of CS includes:
+The 'minimal' install of CloudSlang is enough to run all CloudSlang automations.  The intention of this container is to offer a minimal install of CloudSlang (CS) with updated CS content. This minimal install of CS includes:
 
 * The CS CLI (and content)
 * The CS WebApp (for REST API)
@@ -20,15 +20,15 @@ To start this container, use the following steps.
 1. Build the CS image.
    ```
    cd /path/to/Dockerfile
-   docker build -t cloudslang:1.0.161 .
+   docker build -t cloudslang:latest .
    
    [optionally, you can pass build args to run newer or older versions]
    
-   docker build -t cloudslang:1.0.161 --build-arg centos_version=latest --build-arg cs_version=1.0.161 .
+   docker build -t cloudslang:latest --build-arg centos_version=latest --build-arg cs_cli_version=1.0.161 .
    ```
 2. Run the CS container.
    ```
-   docker run -d -p 8443:8443 --name cloudslang cloudslang:1.0.161
+   docker run -d -p 8443:8443 --name cloudslang cloudslang:latest
    ```
 
 ### Testing This Container via Command-Line
