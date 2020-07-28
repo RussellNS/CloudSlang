@@ -2,7 +2,9 @@
 
 ## Full Configuration
 
-YOU PROBABLY NEVER NEED THIS CONTAINER.  The 'minimal' install of CloudSlang is enough to run all CloudSlang automations.  This container is more of a showcase of a Dev environment for CloudSlang, and is conceptually based off the 'cloudslang-dev' container referenced at the official CloudSlang website.
+YOU WILL PROBABLY NEVER NEED THIS CONTAINER.
+
+This 'full' Dockerfile creates a HUGE image for very specialized use cases.  The 'minimal' install of CloudSlang is enough to run all CloudSlang automations.  This container is more of a showcase of a Dev environment for CloudSlang, and is conceptually based off the 'cloudslang-dev' container referenced at the official CloudSlang website.
 
 The intention of this container is to offer a full CloudSlang development suite.  This container includes many of the components that can be helpful for developing CloudSlang content or for connecting/troubleshooting.  This full install of CS includes:
 
@@ -36,15 +38,15 @@ To start this container, use the following steps.
 1. Build the CS image.
    ```
    cd /path/to/Dockerfile
-   docker build -t cloudslang:1.0.161 .
+   docker build -t cloudslang:latest .
    
    [optionally, you can pass build args to run newer or older versions]
    
-   docker build -t cloudslang:1.0.161 --build-arg centos_version=latest --build-arg cs_version=1.0.161 .   
+   docker build -t cloudslang:latest --build-arg centos_version=latest --build-arg cs_cli_version=1.0.161 .   
    ```
 2. Run the CS container.
    ```
-   docker run -d -p 2222:22 -p 8443:8443 --name cloudslang cloudslang:1.0.161   
+   docker run -d -p 2222:22 -p 8443:8443 --name cloudslang cloudslang:latest   
    ```
 
 ### Testing This Container via Command-Line
