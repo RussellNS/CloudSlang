@@ -62,8 +62,8 @@
 #   *  "1.0.10"
 #   *  "1.0.17"
 #   *  "1.0.32"
-#   *  "1.0.34" - Highest working version - Breaking change introduced in
-#                 CS CLI v1.0.35
+#   *  "1.0.20" - Highest working version - Breaking change introduced in v1.0.24
+#   *  "1.0.34" - Breaking change introduced in CS CLI v1.0.35 (won't even build)
 # NOTE: In order for a version to be elligable, it must be published to the Maven
 #       repo for CloudSlang.  Not all versions are published.  Only use versions
 #       that are published.  Check here to see:
@@ -129,7 +129,7 @@ RUN echo "##### Include Latest CloudSlang Content #####" \
   && echo "----- Download Latest CloudSlang Content -----" \
   && git clone --no-hardlinks https://github.com/CloudSlang/cs-content.git /media/cslang-content/ \
   && echo "----- Copy CloudSlang Content -----" \
-  && /usr/bin/cp -rf /media/cslang-content/content/* /opt/cslang-cli/content/ \
+  && /usr/bin/cp -rf /media/cslang-content/content /opt/cslang-cli/ \
   # Without the next line, the CS-WebApp breaks!  It has to do with a single
   # 'README.md' file that's in amazon/aws/lambda, but it could be any CS content
   # that's not a *.sl file.  In short, delete all files in 'content' that are
