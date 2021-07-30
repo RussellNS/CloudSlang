@@ -8,6 +8,21 @@
 #   * Java (headless)                                                                     #
 #   * SSH (Client)                                                                        #
 ###########################################################################################
+#                                          TO DO                                          #
+###########################################################################################
+# 1) Incorporate latest 'cs-actions' on GitHub.                                           #
+#      * https://github.com/CloudSlang/cs-actions.                                        #
+#          o This is where MF actively develops new CS content                            #
+#          o The content here is days or even hours old                                   #
+#          o Development is *very* live here                                              #
+#          o Including this could break things                                            #
+#          o Will require logic to:                                                       #
+#              - exclude active development versions (beta, SNAPSHOT, RC##, etc.)         #
+#              - determine/clone the latest stable version                                #
+#          o After that, it's just 'mvn clean install'                                    #
+#          o Is this even worth it?                                                       #
+#          o Expose as a build ARG maybbe, user can choose?                               #
+###########################################################################################
 
 # SET GLOBAL VARIABLE(S)
 # NOTE: These global variables will be re-used as local variables in each stage of the
@@ -16,45 +31,46 @@
 #
 # Use 'centos_version' to set the version of base OS from which to pull.  For reference,
 # this container has been able to run successfully with:
-#   *  "7.8.2003"
-#   *  "8.2.2004"
+#   *  "7.9.2009" - NOTE: The Atom Editor will not install successfully with CentOS 7.x.
+#                         You will have to comment the atom install lines manually.
+#   *  "8.3.2011"
 #
 # Use 'jdk_version' to set the version of Java JDK - valid values include:
 #   *  "1.7.0" - CentOS 7
 #   *  "1.8.0" - CentOS 7 & 8
-#   NOTE:  Setting this value to "11" will cause the CS WebApp to build, but fail
-#          to run (with error "Illegal reflective access" or
-#          "nested exception is java.lang.NoClassDefFoundError").
+#   *  "11"    - CentOS 7 & 8
 #
 # Use 'cs_cli_version' to set the version of CS to build.  For reference, this
 # container has been able to run successfully with:
 #   *  "1.0.10"
 #   *  "1.0.23"
-#   *  "1.0.161"
+#   *  "2.0.205"
 #
 # The CS WebApp and the CS CLI are two completely different, stand-alone applications.
 # The CS WebApp is a Spring Boot Web app that fully embeds a version of CS CLI inside
 # it (as a Jar file).  Use 'cs_web_version' to set the version of CS CLI for the
-# CS WebApp to embed during the CS WebApp build.  For reference, this container has
-# been able to run successfully with:
+# CS WebApp to embed during the CS WebApp build.  The reason to separate the versions
+# in this Dockerfile for the CS CLI and the CS WebApp is because during the development
+# of the CS CLI, breaking changes are introduced that cause the CS WebApp not to build.
+# This allows for both apps to build using separate versions.  For reference, this
+# container has been able to run successfully with:
 #   *  "1.0.10"
-#   *  "1.0.17"
-#   *  "1.0.32"
-#   *  "1.0.20" - Highest working version - Breaking change introduced in v1.0.24
-#   *  "1.0.34" - Breaking change introduced in CS CLI v1.0.35 (won't even build)
+#   *  "1.0.23"
+#   *  "2.0.205"
+#
 # NOTE: In order for a version to be elligable, it must be published to the Maven
 #       repo for CloudSlang.  Not all versions are published.  Only use versions
 #       that are published.  Check here to see:
 #         * https://repo1.maven.org/maven2/io/cloudslang/lang/cloudslang-all/
 
-ARG centos_version="7.4.1708"
-ARG jdk_version="1.8.0"
-ARG cs_cli_version="1.0.23"
-ARG cs_web_version="1.0.10"
+ARG centos_version="latest"
+ARG jdk_version="11"
+ARG cs_cli_version="2.0.205"
+ARG cs_web_version="2.0.205"
 
 # NOTE: The ARG values above are default values.  You can override these values
-#       with your own values.  If problems are encountered, then try reverting
-#       back to these values.
+#       with your own values using "docker run" or in a "docker-compose.yml" file.
+#       If problems are encountered, then try reverting back to these values.
 
 FROM centos:${centos_version} AS builder
 
@@ -64,6 +80,24 @@ ARG cs_cli_version
 ARG cs_web_version
 
 #COPY ./mf_content /media/mf_content
+
+# DEBUG - The 'RUN' line below causes the Docker build process to pause
+# DEBUG - indefinitely.  This can be used to expand on Docker build logic or
+# DEBUG - to identify and troubleshoot Docker build problems.  Perform these
+# DEBUG - steps to use:
+# DEBUG -   1) Copy/paste the 'RUN' line to right before any build errors.
+# DEBUG -   2) Use 'docker run' to start the build process.
+# DEBUG -   3) When the build pauses, press CRTL+z (not CTRL+c).
+# DEBUG -   4) Enter 'docker container ls' to view container name that's
+# DEBUG -      building.
+# DEBUG -   5) Use 'docker exec -it <container_name> sh' (or 'bash') to enter
+# DEBUG -      unfinished build.
+# DEBUG -   6) Manually run your commands inside the container to see what
+# DEBUG -      works or to troubleshoot errors.
+# DEBUG - Comment or delete when not needed.
+# DEBUG - NOTE: If CTRL+z does not work, open another SSH session, and
+# DEBUG -       continue the steps.
+#RUN echo "##### DEBUG - Docker build pause #####" && echo "Use the following commands:" && echo "    CTRL+z" && echo "    docker container ls # get container name" && echo "    docker exec -it <container_name> [sh|bash]" && echo "    Run your commands during Docker build" && tail -f /dev/null
 
 RUN echo "##### Creating Java (v${jdk_version}) Build Environment #####" \
   && yum install -y java-${jdk_version}-openjdk-devel git which unzip
@@ -102,11 +136,16 @@ RUN echo "##### Include Latest CloudSlang Content #####" \
 RUN echo "##### Build CloudSlang WebApp v${cs_web_version} (the REST API) #####" \
   && echo "----- Download CloudSlang WebApp -----" \
   && git clone --no-hardlinks https://github.com/CloudSlang/cloudslang-webapp.git /media/cslang-webapp/ \
+  # When building the CS WebApp, Maven embeds CS as a jar.  If your build
+  # fails, the version you chose for 'cs_web_version' may not have a
+  # corresponding 'cloudslang-all-#.#.##.jar' file at this repo:
+  #   * https://repo1.maven.org/maven2/io/cloudslang/lang/cloudslang-all/
   && echo "----- Updating CloudSlang WebApp Version -----" \
   && sed -i "s|<cloudslang.version>1.0.10</cloudslang.version>|<cloudslang.version>${cs_web_version}</cloudslang.version>|" /media/cslang-webapp/pom.xml \
   && echo "----- Build CloudSlang WebApp ZIP -----" \
   && cd /media/cslang-webapp/ \
   && export JAVA_HOME=$(readlink -f $(which java) | sed 's|/bin/java||') \
+  #&& /opt/cslang-cli/maven/apache-maven-3.3.9/bin/mvn clean install \
   && /opt/cslang-cli/maven/apache-maven-3.3.9/bin/mvn clean install -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
   && echo "----- Extract CloudSlang WebApp ZIP -----" \
   && unzip -q /media/cslang-webapp/target/cloudslang-webapp-*.zip -d /opt/cslang-rest/ \
@@ -146,7 +185,7 @@ RUN echo "##### IMPORT CLOUDSLANG CONTENT PACK(S) - STARTING #####" \
                 && if [ -d "/media/mf_content/thisContentPack/Content/Library/io" ] \
                  ; then \
                      echo "----- Copy CS Flows & Operations - ${mfCPname} -----" \
-                     && /usr/bin/cp -rf "/media/mf_content/thisContentPack/Content/Library/io" "/opt/cslang-cli/content/" \
+                     && /usr/bin/cp -rf /media/mf_content/thisContentPack/Content/Library/io /opt/cslang-cli/content/ \
                  ; fi \
                 && if [ -d "/media/mf_content/thisContentPack/Content/Configuration/System Properties/io" ] \
                  ; then \
@@ -166,6 +205,7 @@ RUN echo "##### IMPORT CLOUDSLANG CONTENT PACK(S) - STARTING #####" \
                            ; then \
                                cpPom=${cpJarPath}/${cpJarName}.pom \
                                && echo "----- Import CS Action - ${mfCPname} -> ${cpJarName} -----" \
+                               #&& /opt/cslang-cli/maven/apache-maven-3.3.9/bin/mvn install:install-file -Dmaven.repo.local=/opt/cslang-cli/maven/repo -Dfile=${cpJar} -DpomFile=${cpPom} \
                                && /opt/cslang-cli/maven/apache-maven-3.3.9/bin/mvn install:install-file -Dmaven.repo.local=/opt/cslang-cli/maven/repo -Dfile=${cpJar} -DpomFile=${cpPom} -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
                            ; fi \
                       ; done \
@@ -180,20 +220,27 @@ RUN echo "##### IMPORT CLOUDSLANG CONTENT PACK(S) - STARTING #####" \
    ; fi
 
 RUN echo "##### Completing CloudSlang CLI and WebApp Build Process #####" \
-  && echo "##### Starting CloudSlang CLI and WebApp Image/Container Creation #####"
+  && echo "##### Starting CloudSlang CLI and WebApp Image Creation #####"
 
 ###########################################################################################
-#                               Base OS / Application Setup                               #
+#                               Base OS / Environment Setup                               #
 ###########################################################################################
 FROM centos:${centos_version}
 
 # SET LOCAL VARIABLE(S) FROM GLOBAL FOR MULTISTAGE BUILD
 ARG jdk_version
 
-COPY --from=builder /opt/cslang-cli /opt/cslang-cli
-COPY --from=builder /opt/cslang-rest /opt/cslang-rest
+RUN echo "##### Prep Container for Docker COPY #####" \
+  && echo "----- Add CloudSlang User & Group ('cslang') -----" \
+  && groupadd -r cslang \
+  && groupmod -g 2000 cslang \
+  && useradd -r -g cslang cslang \
+  && usermod -u 2000 cslang
 
-RUN echo "##### Create CloudSlang CLI/WebApp Container #####" \
+COPY --from=builder --chown=cslang:cslang /opt/cslang-cli /opt/cslang-cli
+COPY --from=builder --chown=cslang:cslang /opt/cslang-rest /opt/cslang-rest
+
+RUN echo "##### Build CloudSlang CLI/WebApp Container #####" \
   && echo "----- Install Required Files -----" \
   && yum install -y --setopt=tsflags=nodocs \
     java-${jdk_version}-openjdk-headless \
@@ -202,16 +249,7 @@ RUN echo "##### Create CloudSlang CLI/WebApp Container #####" \
   && echo "----- Create Universal JAVA_HOME Symbolic Link -----" \
   && ln -s $(readlink -f $(which java) | sed 's|/bin/java||') /usr/lib/jvm/java \
   && echo "----- Make CloudSlang CLI ('cslang') Runnable from Anywhere -----" \
-  && ln -s /opt/cslang-cli/bin/cslang /usr/sbin/cslang \
-  && echo "----- Add CloudSlang User & Group ('cslang') -----" \
-  && groupadd -r cslang \
-  && groupmod -g 2000 cslang \
-  && useradd -r -g cslang cslang \
-  && usermod -u 2000 cslang \
-  && echo "----- Update Owner of CloudSlang CLI Directory -----" \
-  && chown -R cslang:cslang /opt/cslang-cli \
-  && echo "----- Update Owner of CloudSlang WebApp Directory -----" \
-  && chown -R cslang:cslang /opt/cslang-rest
+  && ln -s /opt/cslang-cli/bin/cslang /usr/sbin/cslang
 
 ENV JAVA_HOME=/usr/lib/jvm/java
 ENV APP_HOME=/opt/cslang-rest
@@ -220,4 +258,4 @@ WORKDIR /opt/cslang-cli/bin/
 
 EXPOSE 8443/tcp
 
-ENTRYPOINT ["java", "-jar", "-Dapp.home=/opt/cslang-rest", "/opt/cslang-rest/cloudslang-webapp-0.0.1.jar"]
+ENTRYPOINT ["java", "-jar", "-Dapp.home=/opt/cslang-rest", "/opt/cslang-rest/cloudslang-webapp-2.0.0.jar"]
