@@ -38,7 +38,8 @@
 # Use 'jdk_version' to set the version of Java JDK - valid values include:
 #   *  "1.7.0" - CentOS 7
 #   *  "1.8.0" - CentOS 7 & 8
-#   *  "11"    - CentOS 7 & 8
+#   NOTE:  Setting this value to "11" will cause both the CS CLI and the CS WebApp to
+#          build, but fail to run.
 #
 # Use 'cs_cli_version' to set the version of CS to build.  For reference, this
 # container has been able to run successfully with:
@@ -64,7 +65,7 @@
 #         * https://repo1.maven.org/maven2/io/cloudslang/lang/cloudslang-all/
 
 ARG centos_version="latest"
-ARG jdk_version="11"
+ARG jdk_version="1.8.0"
 ARG cs_cli_version="2.0.205"
 ARG cs_web_version="2.0.205"
 
