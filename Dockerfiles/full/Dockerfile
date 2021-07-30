@@ -10,7 +10,7 @@
 #   * SSH (Server)                                                                        #
 #   * SSH (Client)                                                                        #
 #   * Git                                                                                 #
-#   * Python                                                                              #
+#   * Python36                                                                            #
 #   * Pip                                                                                 #
 #   * Editors                                                                             #
 #       - Nano                                                                            #
