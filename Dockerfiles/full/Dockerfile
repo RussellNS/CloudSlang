@@ -30,6 +30,21 @@
 #   *  This container updates the underlying OS packages to the latest version, which can #
 #      break things.                                                                      #
 ###########################################################################################
+#                                          TO DO                                          #
+###########################################################################################
+# 1) Incorporate latest 'cs-actions' on GitHub.                                           #
+#      * https://github.com/CloudSlang/cs-actions.                                        #
+#          o This is where MF actively develops new CS content                            #
+#          o The content here is days or even hours old                                   #
+#          o Development is *very* live here                                              #
+#          o Including this could break things                                            #
+#          o Will require logic to:                                                       #
+#              - exclude active development versions (beta, SNAPSHOT, RC##, etc.)         #
+#              - determine/clone the latest stable version                                #
+#          o After that, it's just 'mvn clean install'                                    #
+#          o Is this even worth it?                                                       #
+#          o Expose as a build ARG maybbe, user can choose?                               #
+###########################################################################################
 
 # SET GLOBAL VARIABLE(S)
 # NOTE: These global variables will be re-used as local variables in each stage of the
@@ -38,45 +53,46 @@
 #
 # Use 'centos_version' to set the version of base OS from which to pull.  For reference,
 # this container has been able to run successfully with:
-#   *  "7.8.2003"
-#   *  "8.2.2004"
+#   *  "7.9.2009" - NOTE: The Atom Editor will not install successfully with CentOS 7.x.
+#                         You will have to comment the atom install lines manually.
+#   *  "8.3.2011"
 #
 # Use 'jdk_version' to set the version of Java JDK - valid values include:
 #   *  "1.7.0" - CentOS 7
 #   *  "1.8.0" - CentOS 7 & 8
-#   NOTE:  Setting this value to "11" will cause the CS WebApp to build, but fail
-#          to run (with error "Illegal reflective access" or
-#          "nested exception is java.lang.NoClassDefFoundError").
+#   *  "11"    - CentOS 7 & 8
 #
 # Use 'cs_cli_version' to set the version of CS to build.  For reference, this
 # container has been able to run successfully with:
 #   *  "1.0.10"
 #   *  "1.0.23"
-#   *  "1.0.161"
+#   *  "2.0.205"
 #
 # The CS WebApp and the CS CLI are two completely different, stand-alone applications.
 # The CS WebApp is a Spring Boot Web app that fully embeds a version of CS CLI inside
 # it (as a Jar file).  Use 'cs_web_version' to set the version of CS CLI for the
-# CS WebApp to embed during the CS WebApp build.  For reference, this container has
-# been able to run successfully with:
+# CS WebApp to embed during the CS WebApp build.  The reason to separate the versions
+# in this Dockerfile for the CS CLI and the CS WebApp is because during the development
+# of the CS CLI, breaking changes are introduced that cause the CS WebApp not to build.
+# This allows for both apps to build using separate versions.  For reference, this
+# container has been able to run successfully with:
 #   *  "1.0.10"
-#   *  "1.0.17"
-#   *  "1.0.32"
-#   *  "1.0.20" - Highest working version - Breaking change introduced in v1.0.24
-#   *  "1.0.34" - Breaking change introduced in CS CLI v1.0.35 (won't even build)
+#   *  "1.0.23"
+#   *  "2.0.205"
+#
 # NOTE: In order for a version to be elligable, it must be published to the Maven
 #       repo for CloudSlang.  Not all versions are published.  Only use versions
 #       that are published.  Check here to see:
 #         * https://repo1.maven.org/maven2/io/cloudslang/lang/cloudslang-all/
 
-ARG centos_version="7.4.1708"
-ARG jdk_version="1.8.0"
-ARG cs_cli_version="1.0.23"
-ARG cs_web_version="1.0.10"
+ARG centos_version="latest"
+ARG jdk_version="11"
+ARG cs_cli_version="2.0.205"
+ARG cs_web_version="2.0.205"
 
 # NOTE: The ARG values above are default values.  You can override these values
-#       with your own values.  If problems are encountered, then try reverting
-#       back to these values.
+#       with your own values using "docker run" or in a "docker-compose.yml" file.
+#       If problems are encountered, then try reverting back to these values.
 
 FROM centos:${centos_version} AS builder
 
@@ -85,18 +101,24 @@ ARG jdk_version
 ARG cs_cli_version
 ARG cs_web_version
 
-#COPY ./mf_content /media/mf_content
+COPY ./mf_content /media/mf_content
 
 # DEBUG - The 'RUN' line below causes the Docker build process to pause
 # DEBUG - indefinitely.  This can be used to expand on Docker build logic or
 # DEBUG - to identify and troubleshoot Docker build problems.  Perform these
 # DEBUG - steps to use:
-# DEBUG -   1) When the build pauses, press CRTL+z (not CTRL+c).
-# DEBUG -   2) Enter 'docker container ls' to view container name.
-# DEBUG -   3) Use 'docker exec -it <container_name> sh' (or 'bash') to enter
+# DEBUG -   1) Copy/paste the 'RUN' line to right before any build errors.
+# DEBUG -   2) Use 'docker run' to start the build process.
+# DEBUG -   3) When the build pauses, press CRTL+z (not CTRL+c).
+# DEBUG -   4) Enter 'docker container ls' to view container name that's
+# DEBUG -      building.
+# DEBUG -   5) Use 'docker exec -it <container_name> sh' (or 'bash') to enter
 # DEBUG -      unfinished build.
-# DEBUG -   4) Manually run your commands inside the container.
+# DEBUG -   6) Manually run your commands inside the container to see what
+# DEBUG -      works or to troubleshoot errors.
 # DEBUG - Comment or delete when not needed.
+# DEBUG - NOTE: If CTRL+z does not work, open another SSH session, and
+# DEBUG -       continue the steps.
 #RUN echo "##### DEBUG - Docker build pause #####" && echo "Use the following commands:" && echo "    CTRL+z" && echo "    docker container ls # get container name" && echo "    docker exec -it <container_name> [sh|bash]" && echo "    Run your commands during Docker build" && tail -f /dev/null
 
 RUN echo "##### Creating Java (v${jdk_version}) Build Environment #####" \
@@ -129,7 +151,7 @@ RUN echo "##### Include Latest CloudSlang Content #####" \
   && echo "----- Download Latest CloudSlang Content -----" \
   && git clone --no-hardlinks https://github.com/CloudSlang/cs-content.git /media/cslang-content/ \
   && echo "----- Copy CloudSlang Content -----" \
-  && /usr/bin/cp -rf /media/cslang-content/content /opt/cslang-cli/ \
+  && /usr/bin/cp -rf /media/cslang-content/content/* /opt/cslang-cli/content/ \
   # Without the next line, the CS-WebApp breaks!  It has to do with a single
   # 'README.md' file that's in amazon/aws/lambda, but it could be any CS content
   # that's not a *.sl file.  In short, delete all files in 'content' that are
@@ -184,7 +206,7 @@ RUN echo "##### IMPORT CLOUDSLANG CONTENT PACK(S) - STARTING #####" \
                 && if [ -d "/media/mf_content/thisContentPack/Content/Library/io" ] \
                  ; then \
                      echo "----- Copy CS Flows & Operations - ${mfCPname} -----" \
-                     && /usr/bin/cp -rf "/media/mf_content/thisContentPack/Content/Library/io" "/opt/cslang-cli/content/" \
+                     && /usr/bin/cp -rf "/media/mf_content/thisContentPack/Content/Library/io/*" "/opt/cslang-cli/content/io/" \
                  ; fi \
                 && if [ -d "/media/mf_content/thisContentPack/Content/Configuration/System Properties/io" ] \
                  ; then \
@@ -242,20 +264,21 @@ RUN echo "##### Starting Base OS/Environment Install #####"                     
     # BASE OS: Install Misc Packages                                                      \
     && echo "##### Install Misc Packages #####"                                           \
     && yum install -y --setopt=tsflags=nodocs                                             \
+        dnf                                                                               \
         net-tools                                                                         \
         nmap                                                                              \
         tree                                                                              \
         which                                                                             \
         unzip                                                                             \
     #                                                                                     \
-    # CS OPTIONAL: Install EPEL Repo (needed for 'python-pip')                            \
+    # CS OPTIONAL: Install EPEL Repo                                                      \
     && echo "##### Install EPEL Repo #####"                                               \
-    && yum install -y --setopt=tsflags=nodocs                                             \
+    && dnf install -y --setopt=tsflags=nodocs                                             \
         epel-release                                                                      \
     #                                                                                     \
     # CS OPTIONAL: Install SSH packages                                                   \
     && echo "##### Install SSH (Client & Server) #####"                                   \
-    && yum install -y --setopt=tsflags=nodocs                                             \
+    && dnf install -y --setopt=tsflags=nodocs                                             \
         openssh-server                                                                    \
         openssh-clients                                                                   \
         passwd                                                                            \
@@ -282,18 +305,24 @@ RUN echo "##### Starting Base OS/Environment Install #####"                     
     #                                                                                     \
     # CS OPTIONAL: Install Editors                                                        \
     && echo "##### Install Editors #####"                                                 \
-    && yum install -y --setopt=tsflags=nodocs                                             \
+    && echo "----- Install Nano, VIM, & Emacs -----"                                      \
+    && dnf install -y --setopt=tsflags=nodocs                                             \
         nano                                                                              \
         vim                                                                               \
         emacs                                                                             \
+    #                                                                                     \
+    # CS OPTIONAL: Install Atom                                                           \
+    #              NOTE: This stopped working in recent versions of Atom.                 \
+    #                    Haven't fixed yet.                                               \
+    && echo "----- Install Atom -----"                                                    \
     && curl -SLo /media/atom.rpm https://atom.io/download/rpm                             \
-    && yum localinstall -y --nogpgcheck /media/atom.rpm                                   \
+    && dnf localinstall -y --nogpgcheck /media/atom.rpm                                   \
     && rm -f /media/atom.rpm                                                              \
     #                                                                                     \
     # CS OPTIONAL: Configure Atom                                                         \
     && apm install language-cloudslang                                                    \
     #                                                                                     \
-    # CS OPTIONAL: Upgrade CentOS & Clean Yum Cache                                       \
+    # CS OPTIONAL: Upgrade CentOS & Clean Yum/DNF Cache                                   \
     #                                                                                     \
     # BASE OS: Upgrade CentOS Container                                                   \
     #          THIS IS NOT DOCKER BEST PRACTICE, Because:                                 \
@@ -311,14 +340,23 @@ RUN echo "##### Starting Base OS/Environment Install #####"                     
     #              read-only layers.  Upgrading components in later layers and            \
     #              deleting previously installed versions of these components only        \
     #              deletes the pointer to the file in a later layer.  It does not         \
-    #              actually delete the file in a previous layer.                          \
+    #              actually delete the file in a previous layer.  In this way, your       \
+    #              final docker image file size will only grow... dramatically.           \
     && yum upgrade -y --setopt=tsflags=nodocs                                             \
     && yum clean all                                                                      \
-    && rm -rf /var/cache/yum
+    && rm -rf /var/cache/yum                                                              \
+    && rm -rf /var/cache/dnf
 
 ###########################################################################################
 #                                    Application Setup                                    #
 ###########################################################################################
+
+RUN echo "##### Prep Container for Docker COPY #####" \
+  && echo "----- Add CloudSlang User & Group ('cslang') -----" \
+  && groupadd -r cslang \
+  && groupmod -g 2000 cslang \
+  && useradd -r -g cslang cslang \
+  && usermod -u 2000 cslang
 
 COPY --from=builder /opt/cslang-cli /opt/cslang-cli
 COPY --from=builder /opt/cslang-rest /opt/cslang-rest
@@ -366,31 +404,14 @@ RUN echo "##### Starting CloudSlang Setup #####"                                
     && echo "##### Make CloudSlang ('cslang') Runnable from Anywhere #####"               \
     && ln -s /opt/cslang-cli/bin/cslang /usr/sbin/cslang                                  \
     #                                                                                     \
-    # CS REQUIRED: Create 'cslang' user/group                                             \
-    && echo "##### Add CloudSlang User & Group ('cslang') #####"                          \
-    && groupadd -r cslang                                                                 \
-    && groupmod -g 2000 cslang                                                            \
-    && useradd -r -g cslang cslang                                                        \
-    && usermod -u 2000 cslang                                                             \
-    #                                                                                     \
-    # CS REQUIRED: Create 'cslang' user/group                                             \
-    && echo "##### Update Owner of CloudSlang CLI Directory #####"                        \
-    && chown -R cslang:cslang /opt/cslang-cli                                             \
-    && echo "##### Update Owner of CloudSlang WebApp Directory #####"                     \
-    && chown -R cslang:cslang /opt/cslang-rest                                            \
-    #                                                                                     \
     # CS OPTIONAL: Install Git                                                            \
     && echo "##### Install Git #####"                                                     \
     && yum install -y --setopt=tsflags=nodocs                                             \
         git                                                                               \
     #                                                                                     \
     # CS OPTIONAL: Install Python                                                         \
-    # CentOS 7.x uses 'python' and installs Python v2.7                                   \
-    # CentOS 8.x uses 'python2' or 'python36'                                             \
     && echo "##### Install Python #####"                                                  \
     && yum install -y --setopt=tsflags=nodocs                                             \
-        python                                                                            \
-    || yum install -y --setopt=tsflags=nodocs                                             \
         python36                                                                          \
     #                                                                                     \
     # CS OPTIONAL: Install Pip                                                            \
@@ -398,27 +419,22 @@ RUN echo "##### Starting CloudSlang Setup #####"                                
     # CentOS 8.x with python3 uses 'platform-python-pip'                                  \
     && echo "##### Install Pip #####"                                                     \
     && yum install -y --setopt=tsflags=nodocs                                             \
-        python-pip                                                                        \
+        python3-pip                                                                       \
     || yum install -y --setopt=tsflags=nodocs                                             \
         platform-python-pip                                                               \
     #                                                                                     \
     # CS OPTIONAL: Upgrade PIP                                                            \
-    # CentOS 7.x with Python2 uses 'pip'                                                  \
-    # CentOS 8.x with python3 uses 'pip3'                                                 \
     && echo "##### Upgrade Pip #####"                                                     \
-    && pip install --upgrade pip                                                          \
-    || pip3 install --upgrade pip                                                         \
+    && pip3 install --upgrade pip                                                         \
     #                                                                                     \
     # CS OPTIONAL: Install Python API for Jenkins (which is Java centric)                 \
-    # CentOS 7.x with Python2 uses 'pip'                                                  \
-    # CentOS 8.x with python3 uses 'pip3'                                                 \
     && echo "##### Install Python API for Jenkins #####"                                  \
-    && pip install -r /opt/cslang-cli/python-lib/requirements.txt -t /opt/cslang-cli/python-lib/ \
-    || pip3 install -r /opt/cslang-cli/python-lib/requirements.txt -t /opt/cslang-cli/python-lib/ \
+    && pip3 install -r /opt/cslang-cli/python-lib/requirements.txt -t /opt/cslang-cli/python-lib/ \
     #                                                                                     \
     # CS OPTIONAL: Clean Yum Cache                                                        \
     && yum clean all                                                                      \
     && rm -rf /var/cache/yum
+
 
 ENV JAVA_HOME=/usr/lib/jvm/java
 ENV APP_HOME=/opt/cslang-rest
@@ -458,4 +474,4 @@ EXPOSE 22/tcp
 #   *  "-D" - do not detach
 #   *  "-d" - do not detach with debug logging
 #   *  "-e" - log to stderr
-ENTRYPOINT /usr/sbin/sshd -e ; java -jar -Dapp.home=/opt/cslang-rest /opt/cslang-rest/cloudslang-webapp-0.0.1.jar
+ENTRYPOINT /usr/sbin/sshd -e ; java -jar -Dapp.home=/opt/cslang-rest /opt/cslang-rest/cloudslang-webapp-2.0.0.jar
