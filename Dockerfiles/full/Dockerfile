@@ -101,7 +101,7 @@ ARG jdk_version
 ARG cs_cli_version
 ARG cs_web_version
 
-COPY ./mf_content /media/mf_content
+#COPY ./mf_content /media/mf_content
 
 # DEBUG - The 'RUN' line below causes the Docker build process to pause
 # DEBUG - indefinitely.  This can be used to expand on Docker build logic or
