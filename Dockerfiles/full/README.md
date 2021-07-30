@@ -42,7 +42,7 @@ To start this container, use the following steps.
    
    [optionally, you can pass build args to run newer or older versions]
    
-   docker build -t cloudslang:latest --build-arg centos_version=latest --build-arg cs_cli_version=1.0.161 .   
+   docker build -t cloudslang:latest --build-arg centos_version=latest --build-arg cs_cli_version=2.0.205 .   
    ```
 2. Run the CS container.
    ```
@@ -85,7 +85,7 @@ _________ .__                   .____________.__
 \     \___|  |_(  <_> )  |  / /_/ |/        \|  |__/ __ \|   |  \/ /_/  >
  \______  /____/\____/|____/\____ /_______  /|____(____  /___|  /\___  /
         \/                       \/       \/           \/     \//_____/
-1.0.147
+2.0.205
 Welcome to CloudSlang. For assistance type help.
 cslang> run --f /opt/cslang-cli/content/io/cloudslang/base/print/print_text.sl --i text=Hi
 Hi
@@ -98,7 +98,7 @@ Execution id: 100800001, duration: 0:00:02.088
 Get the version of the CS WebApp:
 ```
 # curl -k --user admin:admin -X GET https://localhost:8443/cs/rest/version
-{"version":"1.0.34"}
+{"version":"2.0.205"}
 ```
 
 Get the 'inputs' for the CS 'print_text' flow:
@@ -138,7 +138,7 @@ RaNDomSTRiNg==
 Replace the '--user username:password' part of the command line with an HTTP header for all CS REST API calls. For example:
 ```
 # curl -k -X GET -H "Authorization: Basic RaNDomSTRiNg=" https://localhost:8443/cs/rest/version
-{"version":"1.0.34"}
+{"version":"2.0.205"}
 ```
 
 NOTE: The REST API for CS comes with preinstalled self-signed certs. So username and password aren't exactly sent in plain text. However, it also includes the ability to import and use your own certificates. In addition, the accounts 'admin' and 'author' are default accounts. You can create custom accounts with custom permissions (READ or READ/WRITE) in this file here:
